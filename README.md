@@ -98,15 +98,25 @@ PixLink 是一个基于 ZTM（Zero Trust Mesh）开源技术构建的游戏联�
    cd pixlink
    ```
 
-2. **启动服务**
+2. **启动ZTM环境（可选）**
+   ```bash
+   cd pixlink-demo-ztm
+   docker-compose up -d
+   cd ..
+   ```
+
+3. **启动服务**
    ```bash
    docker-compose -f docker-compose-local.yml up -d
    ```
 
-3. **访问应用**
+4. **访问应用**
    - 前端: http://localhost:5173
    - 后端API: http://localhost:3000
    - 健康检查: http://localhost:3000/health
+   - ZTM Hub: http://localhost:8888
+   - ZTM Root Agent: http://localhost:7777
+   - ZTM Local Agent: http://localhost:7778
 
 ### Docker快速验证
 
@@ -147,6 +157,12 @@ pixlink/
 │   ├── prisma/             # 数据库迁移
 │   ├── scripts/            # 测试脚本
 │   └── package.json
+├── pixlink-demo-ztm/       # ZTM演示环境
+│   ├── docker-compose.yml  # ZTM Hub + Agent配置
+│   ├── docker-compose-client.yml  # 客户端Agent配置
+│   ├── agent-data/         # Agent数据目录
+│   ├── hub-data/           # Hub数据目录
+│   └── README.md          # ZTM环境说明
 ├── docs/                  # 项目文档
 │   ├── PixLink_产品调研与架构设计.md
 │   ├── PixLink_评估报告.md
