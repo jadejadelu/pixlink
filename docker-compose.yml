@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # MySQL数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: pixlink-mysql
+    restart: unless-stopped
+    environment:
+      # MySQL root用户密码
+      MYSQL_ROOT_PASSWORD: password
+      # 创建的数据库名称
+      MYSQL_DATABASE: pixlink
+      # MySQL时区
+      TZ: Asia/Shanghai
+    ports:
+      # MySQL服务端口
+      - "3306:3306"
+    volumes:
+      # MySQL数据持久化
+      - mysql_data:/var/lib/mysql
+    networks:
+      - pixlink-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PixLink服务端
+  pixlink-server:
+    build:
+      context: ./pixlink-server
+      dockerfile: Dockerfile
+    container_name: pixlink-server
+    restart: unless-stopped
+    environment:
+      # ========== 服务器配置 ==========
+      # 服务器端口（默认：3000）
+      PORT: 3000
+      # 运行环境（默认：development）
+      NODE_ENV: development
+
+      # ========== 数据库配置 ==========
+      # 数据库连接地址（使用服务名mysql作为hostname）
+      DATABASE_URL: "mysql://root:password@mysql:3306/pixlink"
+
+      # ========== JWT配置 ==========
+      # JWT密钥（生产环境请修改为随机字符串）
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      # JWT过期时间（默认：7d）
+      JWT_EXPIRES_IN: 7d
+
+      # ========== CA证书配置 ==========
+      # CA证书路径（默认：./certs/ca.crt）
+      CA_CERT_PATH: ./certs/ca.crt
+      # CA密钥路径（默认：./certs/ca.key）
+      CA_KEY_PATH: ./certs/ca.key
+      # 证书有效期天数（默认：90）
+      CERT_VALIDITY_DAYS: 90
+
+      # ========== Token配置 ==========
+      # 注册令牌TTL秒数（默认：300）
+      ENROLLMENT_TOKEN_TTL: 300
+      # 激活令牌TTL秒数（默认：180 = 3分钟）
+      ACTIVATION_TOKEN_TTL: 180
+
+      # ========== 邮件服务配置 ==========
+      # SMTP服务器地址（请修改为实际的SMTP服务器）
+      SMTP_HOST: smtp.gmail.com
+      # SMTP端口（默认：587，Gmail建议使用465）
+      SMTP_PORT: 465
+      # SMTP用户名（请修改为实际的邮箱地址）
+      SMTP_USER: your-email@gmail.com
+      # SMTP密码（请修改为实际的邮箱密码或应用专用密码）
+      SMTP_PASS: your-email-password
+
+      # ========== 前端URL配置 ==========
+      # 前端URL（用于激活链接）
+      FRONTEND_URL: http://localhost:5173
+
+      # ========== ZTM配置 ==========
+      # ZTM hub地址（用于bootstrap）
+      ZTM_HUB_ADDRESS: ztm-hub:8888
+      # ZTM root agent地址（用于创建permit）
+      ZTM_ROOT_AGENT_URL: http://host.docker.internal:7777
+      # ZTM mesh名称
+      ZTM_MESH_NAME: ztm-hub:8888
+    ports:
+      # 服务端API端口
+      - "3000:3000"
+    volumes:
+      # CA证书文件挂载
+      - ./certs:/app/certs
+    depends_on:
+      - mysql
+    networks:
+      - pixlink-network
+    command: npm run dev
+
+  # PixLink客户端
+  pixlink-client:
+    build:
+      context: ./pixlink-client
+      dockerfile: Dockerfile
+    container_name: pixlink-client
+    restart: unless-stopped
+    environment:
+      # ========== Vite开发服务器配置 ==========
+      # 开发服务器端口（默认：5173）
+      VITE_DEV_PORT: 5173
+      # 开发服务器主机（默认：localhost）
+      VITE_DEV_HOST: 0.0.0.0
+
+      # ========== ZTM Agent配置 ==========
+      # 本地ZTM agent地址（用于获取identity）
+      VITE_ZTM_LOCAL_AGENT_URL: http://host.docker.internal:7778/
+      # ZTM mesh名称
+      VITE_ZTM_MESH_NAME: ztm-hub:8888
+
+      # ========== 服务器API配置 ==========
+      # 后端API地址
+      VITE_API_BASE_URL: http://pixlink-server:3000
+    ports:
+      # 客户端开发服务器端口
+      - "5173:5173"
+    depends_on:
+      - pixlink-server
+    networks:
+      - pixlink-network
+    command: npm run dev
+
+networks:
+  pixlink-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

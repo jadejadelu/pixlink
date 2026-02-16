@@ -1,0 +1,58 @@
+# PixLink Git Ignore Files
+
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建输出
+dist/
+build/
+
+# 环境变量文件（包含敏感信息）
+.env
+.env.local
+.env.*.local
+
+# Docker Compose本地配置文件（包含SMTP密码等敏感信息）
+docker-compose-local.yml
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 临时文件
+tmp/
+temp/
+
+# Docker相关
+.dockerignore
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 证书文件（不提交密钥）
+*.key
+*.pem
+!ca.crt
+
+# 浏览器记录（HAR文件）
+浏览器记录*.har
+*.har

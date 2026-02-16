@@ -1,0 +1,15 @@
+node_modules/
+dist/
+logs/
+*.log
+.env
+.DS_Store
+certs/
+*.pem
+*.crt
+*.key
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  phone     String?
+  nickname  String
+  password  String?
+  avatar    String?
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  devices         Device[]
+  certificates    Certificate[]
+  enrollmentTokens EnrollmentToken[]
+  sessions        Session[]
+  passwordResets  PasswordReset[]
+  accountActivations AccountActivation[]
+  ownedRooms      Room[]       @relation("RoomOwner")
+  memberships     Membership[]
+  messages        Message[]
+  gameShares      GameShare[]
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model Device {
+  id             String   @id @default(uuid())
+  userId         String
+  os             String
+  arch           String
+  agentVersion   String
+  deviceNonce    String   @unique
+  lastSeen       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificates   Certificate[]
+
+  @@index([userId])
+  @@index([deviceNonce])
+}
+
+model Certificate {
+  id           String            @id @default(uuid())
+  userId       String
+  deviceId     String?
+  ztmUsername  String            @unique
+  status       CertificateStatus @default(ACTIVE)
+  fingerprint  String            @unique
+  notBefore    DateTime
+  notAfter     DateTime
+  certificateChain  String        @db.Text
+  permitSent   Boolean           @default(false)
+  permitSentAt DateTime?
+  permitEmail  String?
+  isJoinedMesh Boolean           @default(false)
+  rememberDevice Boolean          @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device       Device?           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([ztmUsername])
+  @@index([fingerprint])
+}
+
+enum CertificateStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model EnrollmentToken {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceNonce  String
+  token        String   @unique
+  type         EnrollmentTokenType
+  expiresAt    DateTime
+  used         Boolean  @default(false)
+  usedAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([deviceNonce])
+}
+
+enum EnrollmentTokenType {
+  MAGIC_LINK
+  OTP
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique @db.VarChar(500)
+  deviceId     String?
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Room {
+  id          String      @id @default(uuid())
+  ownerId     String
+  name        String
+  visibility  RoomVisibility @default(PRIVATE)
+  status      RoomStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner       User        @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  tunnels     Tunnel[]
+  messages    Message[]
+  gameShares  GameShare[]
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+enum RoomVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+  DISSOLVED
+}
+
+model Membership {
+  id        String     @id @default(uuid())
+  roomId    String
+  userId    String
+  role      MembershipRole @default(MEMBER)
+  joinedAt  DateTime   @default(now())
+  state     MembershipState @default(OFFLINE)
+  lastSeen  DateTime   @default(now())
+
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum MembershipState {
+  ONLINE
+  OFFLINE
+}
+
+model Tunnel {
+  id        String     @id @default(uuid())
+  roomId    String
+  type      TunnelType
+  port      Int
+  mode      TunnelMode @default(RELAY)
+  state     TunnelState @default(CREATED)
+  rttMs     Int?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+enum TunnelType {
+  TCP
+  UDP
+}
+
+enum TunnelMode {
+  P2P
+  RELAY
+}
+
+enum TunnelState {
+  CREATED
+  CONNECTING
+  CONNECTED
+  DISCONNECTED
+  FAILED
+}
+
+model GameShare {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  title     String
+  proto     String
+  hostHint  String?
+  port      Int
+  templateKey String?
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Message {
+  id        String        @id @default(uuid())
+  roomId    String
+  userId    String
+  content   String
+  type      MessageType @default(TEXT)
+  createdAt DateTime      @default(now())
+
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model AccountActivation {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
