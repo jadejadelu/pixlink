@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+
+  ztm-client1-agent:
+    image: flomesh/ztm-agent:1.0.0-rc2
+    container_name: ztm-client1-agent
+    entrypoint: ["/bin/sh", "-c", "ztm run agent --listen 0.0.0.0:7777"]
+    ports:
+      - "7778:7777"
+    environment:
+      - ZTM_JOIN_MESH=ztm-hub:8888
+      - ZTM_ENDPOINT=agent
+      - ZTM_PORT=7777
+      - ZTM_PERMIT=/permit
+      - ZTM_DATA=/home/ztm/.ztm
+    volumes:
+      - ./client1-agent-data:/home/ztm/.ztm
+      - ./client1-permit:/permit
+    networks:
+      - ztm-network
+    restart: unless-stopped
+
+  ztm-client2-agent:
+    image: flomesh/ztm-agent:1.0.0-rc2
+    container_name: ztm-client2-agent
+    entrypoint: ["/bin/sh", "-c", "ztm run agent  --listen 0.0.0.0:7777"]
+    ports:
+      - "7779:7777"
+    environment:
+      - ZTM_JOIN_MESH=ztm-hub:8888
+      - ZTM_ENDPOINT=agent
+      - ZTM_PORT=7777
+      - ZTM_PERMIT=/permit
+      - ZTM_DATA=/home/ztm/.ztm
+    volumes:
+      - ./client2-agent-data:/home/ztm/.ztm
+      - ./client2-permit:/permit
+    networks:
+      - ztm-network
+    restart: unless-stopped
+
+networks:
+  ztm-network:
+    driver: bridge

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  ztm-hub:
+    image: flomesh/ztm-hub:1.0.0-rc2
+    container_name: ztm-hub
+    ports:
+      - "8888:8888"
+    environment:
+      - ZTM_NAMES=ztm-hub
+      - ZTM_PORT=8888
+      - ZTM_DATA=/home/ztm/.ztm
+    volumes:
+      - ./hub-data:/home/ztm/.ztm
+      - shared-permit:/permit
+    networks:
+      - ztm-network
+    restart: unless-stopped
+
+  ztm-agent:
+    image: flomesh/ztm-agent:1.0.0-rc2
+    container_name: ztm-agent
+    ports:
+      - "7777:7777"
+    environment:
+      - ZTM_JOIN_MESH=ztm-hub:8888
+      - ZTM_ENDPOINT=agent
+      - ZTM_PORT=7777
+      - ZTM_PERMIT=/permit
+      - ZTM_DATA=/home/ztm/.ztm
+    volumes:
+      - ./agent-data:/home/ztm/.ztm
+      - shared-permit:/permit
+      - ./wait-and-run-agent.sh:/usr/local/bin/wait-and-run-agent.sh:ro
+    networks:
+      - ztm-network
+    depends_on:
+      - ztm-hub
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/wait-and-run-agent.sh"]
+
+volumes:
+  shared-permit:
+
+networks:
+  ztm-network:
+    driver: bridge
