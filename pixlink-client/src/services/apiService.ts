@@ -16,7 +16,8 @@ import type {
   ApiResponse,
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+// 使用环境变量，提供默认值
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 class ApiService {
   private baseUrl: string;
@@ -64,7 +65,7 @@ class ApiService {
       const data = await response.json() as ApiResponse<T>;
 
       if (!response.ok) {
-        const error: any = new Error(data.error || `Request failed with status ${response.status}`);
+        const error = new Error(data.error || `Request failed with status ${response.status}`) as Error & { requiresActivation?: boolean; email?: string };
         error.requiresActivation = data.requiresActivation;
         error.email = data.email;
         throw error;

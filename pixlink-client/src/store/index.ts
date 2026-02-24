@@ -1,203 +1,176 @@
 // src/store/index.ts
-
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import type { User, Certificate, Room, ZtmAgentStatus } from '../types';
 
-interface StoreState {
-  user: User | null;
-  token: string | null;
-  certificates: Certificate[];
-  rooms: Room[];
-  activeRoom: Room | null;
-  ztmStatus: {
+export const useStore = defineStore('main', () => {
+  // State (使用 ref 实现响应式)
+  const user = ref<User | null>(null);
+  const token = ref<string | null>(localStorage.getItem('auth_token'));
+  const certificates = ref<Certificate[]>([]);
+  const rooms = ref<Room[]>([]);
+  const activeRoom = ref<Room | null>(null);
+  const ztmStatus = ref<{
     rootAgent: ZtmAgentStatus | null;
     localAgent: ZtmAgentStatus | null;
-  };
-  isLoading: boolean;
-  error: string | null;
-}
+  }>({
+    rootAgent: null,
+    localAgent: null,
+  });
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
 
-class Store {
-  private state: StoreState;
-  private listeners: Set<() => void>;
+  // Getters (使用 computed)
+  const isAuthenticated = computed(() => !!token.value);
 
-  constructor() {
-    this.state = {
-      user: null,
-      token: localStorage.getItem('auth_token'),
-      certificates: [],
-      rooms: [],
-      activeRoom: null,
-      ztmStatus: {
-        rootAgent: null,
-        localAgent: null,
-      },
-      isLoading: false,
-      error: null,
-    };
-    this.listeners = new Set();
+  // Actions
+  function setUser(newUser: User | null) {
+    user.value = newUser;
   }
 
-  // Get state
-  getState(): StoreState {
-    return { ...this.state };
-  }
-
-  // Update state
-  setState(newState: Partial<StoreState>): void {
-    this.state = { ...this.state, ...newState };
-    this.notifyListeners();
-  }
-
-  // Set user
-  setUser(user: User | null): void {
-    this.setState({ user });
-  }
-
-  // Set token
-  setToken(token: string | null): void {
-    this.setState({ token });
-    if (token) {
-      localStorage.setItem('auth_token', token);
+  function setToken(newToken: string | null) {
+    token.value = newToken;
+    if (newToken) {
+      localStorage.setItem('auth_token', newToken);
     } else {
       localStorage.removeItem('auth_token');
     }
   }
 
-  // Set certificates
-  setCertificates(certificates: Certificate[]): void {
-    this.setState({ certificates });
+  function setCertificates(newCertificates: Certificate[]) {
+    certificates.value = newCertificates;
   }
 
-  // Add certificate
-  addCertificate(certificate: Certificate): void {
-    this.setState({
-      certificates: [...this.state.certificates, certificate],
-    });
+  function addCertificate(certificate: Certificate) {
+    certificates.value.push(certificate);
   }
 
-  // Remove certificate
-  removeCertificate(certificateId: string): void {
-    this.setState({
-      certificates: this.state.certificates.filter(cert => cert.id !== certificateId),
-    });
+  function removeCertificate(certificateId: string) {
+    certificates.value = certificates.value.filter(cert => cert.id !== certificateId);
   }
 
-  // Set rooms
-  setRooms(rooms: Room[]): void {
-    this.setState({ rooms });
+  function setRooms(newRooms: Room[]) {
+    rooms.value = newRooms;
   }
 
-  // Add room
-  addRoom(room: Room): void {
-    this.setState({
-      rooms: [...this.state.rooms, room],
-    });
+  function addRoom(room: Room) {
+    rooms.value.push(room);
   }
 
-  // Remove room
-  removeRoom(roomId: string): void {
-    this.setState({
-      rooms: this.state.rooms.filter(room => room.id !== roomId),
-    });
-    if (this.state.activeRoom?.id === roomId) {
-      this.setState({ activeRoom: null });
+  function removeRoom(roomId: string) {
+    rooms.value = rooms.value.filter(room => room.id !== roomId);
+    if (activeRoom.value?.id === roomId) {
+      activeRoom.value = null;
     }
   }
 
-  // Set active room
-  setActiveRoom(room: Room | null): void {
-    this.setState({ activeRoom: room });
+  function setActiveRoom(room: Room | null) {
+    activeRoom.value = room;
   }
 
-  // Set ZTM root agent status
-  setRootAgentStatus(status: ZtmAgentStatus | null): void {
-    this.setState({
-      ztmStatus: {
-        ...this.state.ztmStatus,
-        rootAgent: status,
-      },
-    });
+  function setRootAgentStatus(status: ZtmAgentStatus | null) {
+    ztmStatus.value.rootAgent = status;
   }
 
-  // Set ZTM local agent status
-  setLocalAgentStatus(status: ZtmAgentStatus | null): void {
-    this.setState({
-      ztmStatus: {
-        ...this.state.ztmStatus,
-        localAgent: status,
-      },
-    });
+  function setLocalAgentStatus(status: ZtmAgentStatus | null) {
+    ztmStatus.value.localAgent = status;
   }
 
-  // Set loading
-  setLoading(isLoading: boolean): void {
-    this.setState({ isLoading });
+  function setLoading(loading: boolean) {
+    isLoading.value = loading;
   }
 
-  // Set error
-  setError(error: string | null): void {
-    this.setState({ error });
+  function setError(err: string | null) {
+    error.value = err;
   }
 
-  // Clear error
-  clearError(): void {
-    this.setState({ error: null });
+  function clearError() {
+    error.value = null;
   }
 
-  // Reset state
-  resetState(): void {
-    this.setState({
-      user: null,
-      token: null,
-      certificates: [],
-      rooms: [],
-      activeRoom: null,
-      ztmStatus: {
-        rootAgent: null,
-        localAgent: null,
-      },
-      isLoading: false,
-      error: null,
-    });
+  function resetState() {
+    user.value = null;
+    token.value = null;
+    certificates.value = [];
+    rooms.value = [];
+    activeRoom.value = null;
+    ztmStatus.value = {
+      rootAgent: null,
+      localAgent: null,
+    };
+    isLoading.value = false;
+    error.value = null;
     localStorage.removeItem('auth_token');
   }
 
-  // Subscribe to state changes
-  subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  // 为了向后兼容，保留旧版 API
+  function getState() {
+    return {
+      user: user.value,
+      token: token.value,
+      certificates: certificates.value,
+      rooms: rooms.value,
+      activeRoom: activeRoom.value,
+      ztmStatus: ztmStatus.value,
+      isLoading: isLoading.value,
+      error: error.value,
+    };
   }
 
-  // Notify listeners
-  private notifyListeners(): void {
-    this.listeners.forEach(listener => listener());
+  function getUser() {
+    return user.value;
   }
 
-  // Check if authenticated
-  isAuthenticated(): boolean {
-    return !!this.state.token;
+  function getToken() {
+    return token.value;
   }
 
-  // Get user
-  getUser(): User | null {
-    return this.state.user;
+  function getActiveRoom() {
+    return activeRoom.value;
   }
 
-  // Get token
-  getToken(): string | null {
-    return this.state.token;
+  function getZtmStatus() {
+    return ztmStatus.value;
   }
 
-  // Get active room
-  getActiveRoom(): Room | null {
-    return this.state.activeRoom;
-  }
+  return {
+    // State
+    user,
+    token,
+    certificates,
+    rooms,
+    activeRoom,
+    ztmStatus,
+    isLoading,
+    error,
+    // Getters
+    isAuthenticated,
+    // Actions
+    setUser,
+    setToken,
+    setCertificates,
+    addCertificate,
+    removeCertificate,
+    setRooms,
+    addRoom,
+    removeRoom,
+    setActiveRoom,
+    setRootAgentStatus,
+    setLocalAgentStatus,
+    setLoading,
+    setError,
+    clearError,
+    resetState,
+    // 向后兼容
+    getState,
+    getUser,
+    getToken,
+    getActiveRoom,
+    getZtmStatus,
+  };
+});
 
-  // Get ZTM status
-  getZtmStatus(): StoreState['ztmStatus'] {
-    return this.state.ztmStatus;
-  }
-}
-
-export const store = new Store();
+// 为了向后兼容，保留旧的 store 导出方式
+// 但建议逐步迁移到 useStore()
+export const store = useStore();
 export default store;
