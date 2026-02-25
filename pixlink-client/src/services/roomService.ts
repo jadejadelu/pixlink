@@ -17,14 +17,49 @@ import type {
 } from '../types';
 
 class RoomService {
-  // Create a new room
-  async createRoom(name: string, visibility: RoomVisibility = RoomVisibility.PRIVATE): Promise<Room> {
+  // Create a new room with room number support
+  async createRoom(
+    name: string,
+    visibility: RoomVisibility = RoomVisibility.PRIVATE,
+    options?: {
+      roomNumber?: string;
+      password?: string;
+      maxPlayers?: number;
+      gameType?: string;
+    }
+  ): Promise<Room> {
     try {
-      const response = await apiService.createRoom(name, visibility);
+      const response = await apiService.createRoom({
+        name,
+        visibility,
+        ...options,
+      });
       return response;
     } catch (error) {
       console.error('Create room error:', error);
       throw error;
+    }
+  }
+
+  // Find room by room number
+  async findByRoomNumber(roomNumber: string): Promise<Room | null> {
+    try {
+      const response = await apiService.getRoomByNumber(roomNumber);
+      return response;
+    } catch (error) {
+      console.error(`Find room by number error (${roomNumber}):`, error);
+      return null;
+    }
+  }
+
+  // Join room by room number
+  async joinByNumber(roomNumber: string, password?: string): Promise<Membership | null> {
+    try {
+      const response = await apiService.joinRoomByNumber(roomNumber, password);
+      return response;
+    } catch (error) {
+      console.error(`Join room by number error (${roomNumber}):`, error);
+      return null;
     }
   }
 

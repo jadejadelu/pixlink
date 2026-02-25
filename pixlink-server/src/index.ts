@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import authRoutes from './routes/authRoutes';
 import certificateRoutes from './routes/certificateRoutes';
 import deviceRoutes from './routes/deviceRoutes';
+import roomRoutes from './routes/roomRoutes';
 import schedulerService from './services/schedulerService';
 
 // Global async error handling wrapper
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/certs', certificateRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/rooms', roomRoutes);
 
 app.get('/health', (req, res) => {
   res.json({

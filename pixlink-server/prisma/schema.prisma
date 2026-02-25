@@ -129,8 +129,12 @@ model Session {
 
 model Room {
   id          String      @id @default(uuid())
+  roomNumber  String      @unique
   ownerId     String
   name        String
+  password    String?
+  maxPlayers  Int         @default(8)
+  gameType    String?
   visibility  RoomVisibility @default(PRIVATE)
   status      RoomStatus @default(ACTIVE)
   createdAt   DateTime    @default(now())
@@ -144,6 +148,7 @@ model Room {
 
   @@index([ownerId])
   @@index([visibility])
+  @@index([roomNumber])
 }
 
 enum RoomVisibility {

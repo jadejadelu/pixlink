@@ -160,10 +160,16 @@ class ApiService {
   }
 
   // Room endpoints
-  async createRoom(name: string, visibility: string): Promise<any> {
+  async createRoom(data: {
+    name: string;
+    roomNumber?: string;
+    password?: string;
+    maxPlayers?: number;
+    gameType?: string;
+  }): Promise<any> {
     return this.request<any>('/rooms', {
       method: 'POST',
-      body: JSON.stringify({ name, visibility }),
+      body: JSON.stringify(data),
     });
   }
 
@@ -175,6 +181,10 @@ class ApiService {
     return this.request<any>(`/rooms/${id}`);
   }
 
+  async getRoomByNumber(roomNumber: string): Promise<any> {
+    return this.request<any>(`/rooms/by-number/${roomNumber}`);
+  }
+
   async joinRoom(id: string, inviteCode?: string): Promise<any> {
     return this.request<any>(`/rooms/${id}/join`, {
       method: 'POST',
@@ -182,9 +192,16 @@ class ApiService {
     });
   }
 
+  async joinRoomByNumber(roomNumber: string, password?: string): Promise<any> {
+    return this.request<any>('/rooms/join-by-number', {
+      method: 'POST',
+      body: JSON.stringify({ roomNumber, password }),
+    });
+  }
+
   async leaveRoom(id: string): Promise<void> {
     return this.request<void>(`/rooms/${id}/leave`, {
-      method: 'POST',
+      method: 'DELETE',
     });
   }
 
