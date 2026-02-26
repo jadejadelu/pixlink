@@ -22,7 +22,7 @@ class Store {
 
   constructor() {
     this.state = {
-      user: null,
+      user: this.loadUserFromStorage(),
       token: localStorage.getItem('auth_token'),
       certificates: [],
       rooms: [],
@@ -35,6 +35,20 @@ class Store {
       error: null,
     };
     this.listeners = new Set();
+  }
+
+  // Load user from localStorage
+  private loadUserFromStorage(): User | null {
+    const userStr = localStorage.getItem('pixlink_user');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        console.error('Failed to parse user from localStorage:', e);
+        return null;
+      }
+    }
+    return null;
   }
 
   // Get state
@@ -51,6 +65,11 @@ class Store {
   // Set user
   setUser(user: User | null): void {
     this.setState({ user });
+    if (user) {
+      localStorage.setItem('pixlink_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('pixlink_user');
+    }
   }
 
   // Set token
@@ -160,6 +179,7 @@ class Store {
       error: null,
     });
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('pixlink_user');
   }
 
   // Subscribe to state changes

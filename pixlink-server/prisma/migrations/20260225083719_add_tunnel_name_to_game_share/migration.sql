@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `GameShare` ADD COLUMN `status` ENUM('ACTIVE', 'PAUSED') NOT NULL DEFAULT 'ACTIVE',
+    ADD COLUMN `tunnelName` VARCHAR(191) NULL;

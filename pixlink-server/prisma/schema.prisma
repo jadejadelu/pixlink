@@ -132,6 +132,7 @@ model Room {
   ownerId     String
   name        String
   visibility  RoomVisibility @default(PRIVATE)
+  inviteCode  String?
   status      RoomStatus @default(ACTIVE)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -219,21 +220,28 @@ enum TunnelState {
 }
 
 model GameShare {
-  id        String   @id @default(uuid())
-  roomId    String
-  userId    String
-  title     String
-  proto     String
-  hostHint  String?
-  port      Int
+  id          String            @id @default(uuid())
+  roomId      String
+  userId      String
+  title       String
+  proto       String
+  hostHint    String?
+  port        Int
+  tunnelName  String?           // ZTM隧道名称，用于后续管理
   templateKey String?
-  createdAt DateTime @default(now())
+  status      GameShareStatus   @default(ACTIVE)
+  createdAt   DateTime          @default(now())
 
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room        Room              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([roomId])
   @@index([userId])
+}
+
+enum GameShareStatus {
+  ACTIVE
+  PAUSED
 }
 
 model Message {

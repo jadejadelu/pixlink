@@ -1,0 +1,48 @@
+# ZTM演示环境数据
+
+# Agent数据目录（包含Identity和Permit等敏感信息）
+client1-agent-data/
+client2-agent-data/
+hub-data/
+agent-data/
+
+# Mesh数据（包含隧道和连接信息）
+meshes/
+fs/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 临时文件
+tmp/
+temp/
+
+# 日志文件
+*.log
+logs/
+
+# Docker卷数据
+docker-data/
+
+# 身份文件（Identity）
+identity.json
+identity.pem
+identity.key
+
+# 证书文件（Permit）
+*.permit
+*.crt
+
+# 网络配置
+network-config/
+
+# 运行时数据
+run/
+pid/
+lock/
+
+# 缓存
+cache/
+.cache/

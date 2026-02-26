@@ -56,3 +56,20 @@ temp/
 # 浏览器记录（HAR文件）
 浏览器记录*.har
 *.har
+
+# ZTM演示环境数据
+pixlink-demo-ztm/*/agent-data/
+pixlink-demo-ztm/*/data/
+pixlink-demo-ztm/*/hub-data/
+pixlink-demo-ztm/*/client*-agent-data/
+pixlink-demo-ztm/*/meshes/
+pixlink-demo-ztm/*/fs/
+pixlink-demo-ztm/*.db
+pixlink-demo-ztm/*.sqlite
+pixlink-demo-ztm/*.sqlite3
+
+# ZTM Agent数据（包含Identity和Permit等敏感信息）
+*agent-data/
+*data/
+*hub-data/
+*meshes/

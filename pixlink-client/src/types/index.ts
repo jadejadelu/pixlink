@@ -160,6 +160,11 @@ export interface Room {
   createdAt: string;
   updatedAt: string;
   status: RoomStatus;
+  inviteCode?: string;
+  memberships?: Membership[];
+  tunnels?: Tunnel[];
+  gameShares?: GameShare[];
+  messages?: Message[];
 }
 
 export enum RoomVisibility {
@@ -227,13 +232,26 @@ export enum TunnelState {
 export interface GameShare {
   id: string;
   roomId: string;
+  userId: string;
   title: string;
   proto: TunnelType;
   hostHint: string;
   port: number;
+  tunnelName?: string;  // ZTM隧道名称，用于后续管理
   templateKey: string;
+  status: 'ACTIVE' | 'PAUSED'; // 添加状态字段
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    nickname: string;
+    avatar?: string;
+  };
+  room?: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
 }
 
 // Message types

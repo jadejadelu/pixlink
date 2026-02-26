@@ -79,9 +79,12 @@ const handleLogin = async () => {
     
     const response = await userService.login(loginRequest);
     
-    // Update store
+    // Update store - handle both AuthResponse and LoginResponse structures
     store.setUser(response.user);
-    store.setToken(response.token);
+    const token = response.token || (response.session?.token);
+    if (token) {
+      store.setToken(token);
+    }
     
     emit('login-success', response);
   } catch (err: any) {

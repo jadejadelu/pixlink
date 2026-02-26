@@ -16,11 +16,7 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   
-  ca: {
-    certPath: process.env.CA_CERT_PATH || './certs/ca.crt',
-    keyPath: process.env.CA_KEY_PATH || './certs/ca.key',
-    validityDays: parseInt(process.env.CERT_VALIDITY_DAYS || '90', 10),
-  },
+
   
   enrollmentToken: {
     ttl: parseInt(process.env.ENROLLMENT_TOKEN_TTL || '300', 10),

@@ -45,6 +45,8 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    console.log(`API request to: ${url}`);
+    console.log(`Request options:`, options);
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -53,6 +55,7 @@ class ApiService {
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
+      console.log(`Auth token: ${this.token.substring(0, 20)}...`);
     }
 
     try {
@@ -61,9 +64,14 @@ class ApiService {
         headers,
       });
 
+      console.log(`Response status: ${response.status}`);
+      console.log(`Response ok: ${response.ok}`);
+
       const data = await response.json() as ApiResponse<T>;
+      console.log(`Response data:`, data);
 
       if (!response.ok) {
+        console.log(`Response not ok, throwing error`);
         const error: any = new Error(data.error || `Request failed with status ${response.status}`);
         error.requiresActivation = data.requiresActivation;
         error.email = data.email;
@@ -71,9 +79,11 @@ class ApiService {
       }
 
       if (!data.success || !data.data) {
+        console.log(`Response data not successful, throwing error`);
         throw new Error(data.error || 'Request failed');
       }
 
+      console.log(`Response successful, returning data`);
       return data.data;
     } catch (error) {
       console.error('API request error:', error);
@@ -159,10 +169,10 @@ class ApiService {
   }
 
   // Room endpoints
-  async createRoom(name: string, visibility: string): Promise<any> {
+  async createRoom(name: string, visibility: string, inviteCode?: string): Promise<any> {
     return this.request<any>('/rooms', {
       method: 'POST',
-      body: JSON.stringify({ name, visibility }),
+      body: JSON.stringify({ name, visibility, inviteCode }),
     });
   }
 
@@ -172,6 +182,13 @@ class ApiService {
 
   async getRoom(id: string): Promise<any> {
     return this.request<any>(`/rooms/${id}`);
+  }
+
+  async updateRoom(id: string, data: { name?: string; visibility?: string; inviteCode?: string }): Promise<any> {
+    return this.request<any>(`/rooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async joinRoom(id: string, inviteCode?: string): Promise<any> {
@@ -189,6 +206,12 @@ class ApiService {
 
   async deleteRoom(id: string): Promise<void> {
     return this.request<void>(`/rooms/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async removeMember(roomId: string, userId: string): Promise<void> {
+    return this.request<void>(`/rooms/${roomId}/members/${userId}`, {
       method: 'DELETE',
     });
   }
@@ -229,8 +252,37 @@ class ApiService {
     });
   }
 
+  async updateGameShare(gameShareId: string, tunnelName: string): Promise<any> {
+    return this.request<any>(`/rooms/shares/${gameShareId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ tunnelName }),
+    });
+  }
+
   async getGameShares(roomId: string): Promise<any[]> {
     return this.request<any[]>(`/rooms/${roomId}/shares`);
+  }
+
+  async getGameShareById(gameShareId: string): Promise<any> {
+    return this.request<any>(`/rooms/shares/${gameShareId}`);
+  }
+
+  async deleteGameShare(gameShareId: string): Promise<void> {
+    return this.request<void>(`/rooms/shares/${gameShareId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async pauseGameShare(gameShareId: string): Promise<void> {
+    return this.request<void>(`/rooms/shares/${gameShareId}/pause`, {
+      method: 'PATCH',
+    });
+  }
+
+  async resumeGameShare(gameShareId: string): Promise<void> {
+    return this.request<void>(`/rooms/shares/${gameShareId}/resume`, {
+      method: 'PATCH',
+    });
   }
 
   // Device endpoints

@@ -35,11 +35,21 @@ class UserService {
   }
 
   // Login user
-  async login(data: LoginRequest): Promise<LoginResponse> {
+  async login(data: LoginRequest): Promise<any> {
     try {
       const response = await apiService.login(data);
-      // Set the auth token
-      apiService.setToken(response.token);
+      // Set the auth token - handle both AuthResponse and LoginResponse structures
+      const token = response.token || (response.session?.token);
+      if (token) {
+        apiService.setToken(token);
+        // Update store token to ensure authentication state consistency
+        const { store } = await import('../store');
+        store.setToken(token);
+        // Update user info if available
+        if (response.user || response.session?.user) {
+          store.setUser(response.user || response.session?.user);
+        }
+      }
       return response;
     } catch (error) {
       console.error('Login error:', error);
@@ -75,10 +85,16 @@ class UserService {
       await apiService.logout();
       // Clear the auth token
       apiService.setToken(null);
+      // Update store to clear authentication state
+      const { store } = await import('../store');
+      store.resetState();
     } catch (error) {
       console.error('Logout error:', error);
       // Clear the token anyway
       apiService.setToken(null);
+      // Update store to clear authentication state
+      const { store } = await import('../store');
+      store.resetState();
       throw error;
     }
   }

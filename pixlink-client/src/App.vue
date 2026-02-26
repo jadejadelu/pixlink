@@ -4,9 +4,14 @@ import Login from './components/Login.vue';
 import Register from './components/Register.vue';
 import Activate from './components/Activate.vue';
 import ImportPermit from './components/ImportPermit.vue';
+import RoomList from './components/RoomList.vue';
+import CreateRoom from './components/CreateRoom.vue';
+import JoinRoom from './components/JoinRoom.vue';
+import RoomDetail from './components/RoomDetail.vue';
 import { store } from './store';
 import { userService } from './services/userService';
 import { ztmService } from './services/ztmService';
+import { roomService } from './services/roomService';
 
 const showLogin = ref(true);
 const showIdentity = ref(false);
@@ -14,6 +19,11 @@ const showPermit = ref(false);
 const showDashboard = ref(false);
 const showActivate = ref(false);
 const showImportPermit = ref(false);
+const showRoomList = ref(false);
+const showCreateRoom = ref(false);
+const showJoinRoom = ref(false);
+const showRoomDetail = ref(false);
+const currentRoomId = ref('');
 const isLoading = ref(false);
 const error = ref('');
 const success = ref('');
@@ -24,7 +34,14 @@ const activateToken = ref('');
 onMounted(() => {
   // Check if user is already authenticated
   if (store.isAuthenticated()) {
-    showDashboard.value = true;
+    // If user is authenticated, show dashboard by default
+    // This ensures that after refresh, user stays in authenticated state
+    if (!showDashboard.value && !showRoomList.value && !showCreateRoom.value && !showJoinRoom.value && !showRoomDetail.value) {
+      showDashboard.value = true;
+    }
+  } else {
+    // If not authenticated, show login page
+    showLogin.value = true;
   }
   
   // Check if this is an activation page
@@ -56,10 +73,20 @@ const handleLoginSuccess = async (response: any) => {
   success.value = '登录成功！';
   error.value = '';
   
-  // Check if next action is upload_identity
-  if (response.nextAction === 'upload_identity') {
+  // Check if next action is upload_identity (handle both response.nextAction and response.session.nextAction)
+  const nextAction = response.nextAction || (response.session?.nextAction);
+  
+  // Additional check: if user has already uploaded identity and has certificate ID, go to dashboard
+  const hasCertificateId = localStorage.getItem('pixlink_certificate_id');
+  if (nextAction === 'upload_identity' && hasCertificateId) {
+    // User has already uploaded identity, go directly to dashboard
+    console.log('User has certificate ID, skipping identity upload');
+    showDashboard.value = true;
+  } else if (nextAction === 'upload_identity') {
+    // User needs to upload identity
     showIdentity.value = true;
   } else {
+    // Other next actions or no specific next action, go to dashboard
     showDashboard.value = true;
   }
 };
@@ -137,9 +164,17 @@ const handleSendPermit = async () => {
 };
 
 const handleImportPermitSuccess = () => {
-  showImportPermit.value = false;
-  showDashboard.value = true;
-  success.value = 'Permit导入成功！您的设备已连接到PixLink网络。';
+  console.log('Import permit success, switching to dashboard');
+  // 确保认证状态存在
+  if (store.isAuthenticated()) {
+    showImportPermit.value = false;
+    showDashboard.value = true;
+    success.value = 'Permit导入成功！您的设备已连接到PixLink网络。';
+  } else {
+    console.error('Authentication lost after import permit');
+    // 认证状态丢失时，保持在当前页面并显示错误
+    error.value = '认证状态丢失，请重新登录';
+  }
 };
 
 const handleResendPermit = async () => {
@@ -191,12 +226,79 @@ const validateZtmConnection = async () => {
     isLoading.value = false;
   }
 };
+
+// Room management functions
+const handleShowRoomList = () => {
+  showDashboard.value = false;
+  showRoomList.value = true;
+};
+
+const handleCreateRoom = () => {
+  showRoomList.value = false;
+  showCreateRoom.value = true;
+};
+
+const handleJoinRoom = () => {
+  showRoomList.value = false;
+  showJoinRoom.value = true;
+};
+
+const handleViewRoom = (roomId: string) => {
+  currentRoomId.value = roomId;
+  showRoomList.value = false;
+  showRoomDetail.value = true;
+};
+
+const handleCreateRoomSuccess = (room: any) => {
+  success.value = '房间创建成功！';
+  showCreateRoom.value = false;
+  showRoomList.value = true;
+  // 更新store中的房间列表
+  store.setRooms([...store.getState().rooms, room]);
+};
+
+const handleJoinRoomSuccess = async (membership: any) => {
+  success.value = '加入房间成功！';
+  showJoinRoom.value = false;
+  showRoomList.value = true;
+  // 重新加载房间列表，确保显示新加入的房间
+  try {
+    const rooms = await roomService.getRooms();
+    store.setRooms(rooms);
+  } catch (error) {
+    console.error('Failed to reload rooms after join:', error);
+  }
+};
+
+const handleLeaveRoom = async (roomId: string) => {
+  success.value = '已离开房间！';
+  showRoomDetail.value = false;
+  showRoomList.value = true;
+  // 重新加载房间列表，确保不显示已离开的房间
+  try {
+    const rooms = await roomService.getRooms();
+    store.setRooms(rooms);
+  } catch (error) {
+    console.error('Failed to reload rooms after leave:', error);
+  }
+};
+
+const handleCloseRoomDetail = () => {
+  showRoomDetail.value = false;
+  showRoomList.value = true;
+};
+
+const handleCancelRoomAction = () => {
+  showCreateRoom.value = false;
+  showJoinRoom.value = false;
+  showRoomList.value = true;
+};
 </script>
 
 <template>
   <div class="app">
     <!-- Auth Pages -->
-    <div v-if="!showDashboard && !showIdentity && !showPermit && !showActivate">
+    <div v-if="!showDashboard && !showIdentity && !showPermit && !showActivate && !showRoomList && !showCreateRoom && !showJoinRoom && !showRoomDetail">
       <Login
         v-if="showLogin"
         @login-success="handleLoginSuccess"
@@ -332,8 +434,80 @@ const validateZtmConnection = async () => {
         <div class="rooms">
           <h2>房间管理</h2>
           <p>房间数量：{{ store.getState().rooms.length }}</p>
-          <button class="btn-primary">创建房间</button>
+          <button class="btn-primary" @click="handleShowRoomList">查看房间</button>
         </div>
+      </div>
+    </div>
+    
+    <!-- Room List -->
+    <div v-else-if="showRoomList" class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>PixLink Dashboard</h1>
+        <div>
+          <button class="btn-secondary" @click="showRoomList = false; showDashboard = true">返回仪表板</button>
+          <button class="btn-secondary" @click="handleLogout">退出登录</button>
+        </div>
+      </div>
+      
+      <div class="dashboard-content">
+        <div v-if="error" class="error-message">
+          {{ error }}
+        </div>
+        
+        <div v-if="success" class="success-message">
+          {{ success }}
+        </div>
+        
+        <RoomList 
+          @join-room="handleJoinRoom"
+          @create-room="handleCreateRoom"
+          @view-room="handleViewRoom"
+        />
+      </div>
+    </div>
+    
+    <!-- Create Room -->
+    <div v-else-if="showCreateRoom" class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>PixLink Dashboard</h1>
+        <button class="btn-secondary" @click="showCreateRoom = false; showRoomList = true">返回房间列表</button>
+      </div>
+      
+      <div class="dashboard-content">
+        <CreateRoom 
+          @create-success="handleCreateRoomSuccess"
+          @cancel="handleCancelRoomAction"
+        />
+      </div>
+    </div>
+    
+    <!-- Join Room -->
+    <div v-else-if="showJoinRoom" class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>PixLink Dashboard</h1>
+        <button class="btn-secondary" @click="showJoinRoom = false; showRoomList = true">返回房间列表</button>
+      </div>
+      
+      <div class="dashboard-content">
+        <JoinRoom 
+          @join-success="handleJoinRoomSuccess"
+          @cancel="handleCancelRoomAction"
+        />
+      </div>
+    </div>
+    
+    <!-- Room Detail -->
+    <div v-else-if="showRoomDetail" class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>PixLink Dashboard</h1>
+      </div>
+      
+      <div class="dashboard-content">
+        <RoomDetail 
+          :room-id="currentRoomId"
+          @leave-room="handleLeaveRoom"
+          @close="handleCloseRoomDetail"
+        />
       </div>
     </div>
   </div>

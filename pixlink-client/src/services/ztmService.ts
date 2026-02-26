@@ -12,13 +12,29 @@ const logger = {
 class ZtmService {
   private localAgentUrl: string;
   private meshName: string;
+  
+  // Public getters for other services
+  getLocalAgentUrl(): string {
+    return this.localAgentUrl;
+  }
+  
+  getMeshName(): string {
+    return this.meshName;
+  }
 
   constructor(
     localAgentUrl?: string,
     meshName?: string
   ) {
-    this.localAgentUrl = localAgentUrl || import.meta.env.VITE_ZTM_LOCAL_AGENT_URL || 'http://localhost:7778/';
-    this.meshName = meshName || import.meta.env.VITE_ZTM_MESH_NAME || 'ztm-hub:8888';
+    // 在开发环境中使用代理路径，在生产环境中使用环境变量配置
+    if (import.meta.env.DEV) {
+      // 开发环境使用代理
+      this.localAgentUrl = '/api/ztm-local-agent/';
+    } else {
+      // 生产环境使用环境变量
+      this.localAgentUrl = localAgentUrl || import.meta.env.VITE_ZTM_LOCAL_AGENT_URL || 'http://localhost:7778/';
+    }
+    this.meshName = meshName || import.meta.env.VITE_ZTM_MESH_NAME || 'mesh';
   }
 
   // Validate ZTM local agent connection

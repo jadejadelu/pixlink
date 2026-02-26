@@ -95,34 +95,49 @@ PixLink 诞生于一个简单而真实的想法：解决局域网游戏联机的
    - Permit发送邮件
    - 密码重置邮件
 
-5. **开发工具**
+5. **房间管理**
+   - 创建房间
+   - 加入房间
+   - 房间列表
+   - 房间设置
+
+6. **游戏共享**
+   - 创建游戏共享
+   - 游戏共享列表
+   - 游戏共享暂停/恢复
+   - 游戏共享删除
+   - 多用户加入游戏
+   - 用户加入/退出游戏
+   - ZTM隧道生命周期管理
+
+7. **ZTM隧道管理**
+   - Outbound隧道创建（游戏分享者）
+   - Inbound隧道创建（游戏参与者）
+   - 隧道自动删除
+   - 隧道名称规范化（roomId-gameshareId-port）
+   - 多用户访问支持
+
+8. **开发工具**
    - Debug模式（跳过邮件验证）
    - 完整的日志系统
    - Docker快速验证命令
 
 ### 🚧 待开发功能
 
-1. **房间管理**
-   - 创建房间
-   - 加入房间
-   - 房间列表
-   - 房间设置
-
-2. **隧道管理**
-   - TCP隧道创建
-   - UDP隧道创建
-   - 隧道列表
-   - 隧道管理
-
-3. **游戏集成**
+1. **游戏集成**
    - 游戏发现
    - 游戏启动
    - 游戏状态同步
 
-4. **用户界面**
+2. **用户界面**
    - 主界面优化
    - 设置界面
    - 帮助文档
+
+3. **高级功能**
+   - 游戏房间邀请
+   - 游戏录制与回放
+   - 游戏统计与分析
 
 ## 快速开始
 
@@ -285,6 +300,23 @@ VITE_API_BASE_URL=http://localhost:3000
 - `GET /api/certificates` - 获取证书列表
 - `DELETE /api/certificates/:id` - 删除证书
 
+### 房间接口
+
+- `POST /api/rooms` - 创建房间
+- `GET /api/rooms` - 获取房间列表
+- `GET /api/rooms/:roomId` - 获取房间详情
+- `DELETE /api/rooms/:roomId` - 删除房间
+
+### 游戏共享接口
+
+- `POST /api/rooms/:roomId/shares` - 创建游戏共享
+- `GET /api/rooms/:roomId/shares` - 获取房间游戏共享列表
+- `GET /api/rooms/shares/:gameShareId` - 获取游戏共享详情
+- `PATCH /api/rooms/shares/:gameShareId` - 更新游戏共享
+- `PATCH /api/rooms/shares/:gameShareId/pause` - 暂停游戏共享
+- `PATCH /api/rooms/shares/:gameShareId/resume` - 恢复游戏共享
+- `DELETE /api/rooms/shares/:gameShareId` - 删除游戏共享
+
 ## 开发指南
 
 ### 添加新功能
@@ -370,6 +402,18 @@ docker exec pixlink-mysql mysql -uroot -ppassword pixlink -e "DELETE FROM User; 
 - Docker - 容器化技术
 
 ## 更新日志
+
+### v1.1.0 (2026-02-26)
+
+- ✅ 完成房间管理功能
+- ✅ 实现游戏共享功能
+- ✅ 添加ZTM隧道生命周期管理
+- ✅ 实现多用户加入游戏功能
+- ✅ 添加用户加入/退出游戏功能
+- ✅ 修复隧道名称冲突问题
+- ✅ 修复多用户访问权限问题
+- ✅ 优化隧道创建和删除流程
+- ✅ 添加自动复制到剪贴板功能
 
 ### v1.0.0 (2026-02-16)
 

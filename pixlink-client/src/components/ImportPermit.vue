@@ -188,7 +188,9 @@ const importPermit = async () => {
       goToDashboard();
     }, 2000);
   } catch (err: any) {
+    console.error('Import permit error:', err);
     error.value = err.message || 'Permit导入失败，请检查Permit内容是否正确。';
+    // 错误时不重置页面状态，保持在当前页面
   } finally {
     isLoading.value = false;
   }

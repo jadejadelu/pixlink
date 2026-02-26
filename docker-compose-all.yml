@@ -53,13 +53,7 @@ services:
       # JWT过期时间（默认：7d）
       JWT_EXPIRES_IN: 7d
 
-      # ========== CA证书配置 ==========
-      # CA证书路径（默认：./certs/ca.crt）
-      CA_CERT_PATH: ./certs/ca.crt
-      # CA密钥路径（默认：./certs/ca.key）
-      CA_KEY_PATH: ./certs/ca.key
-      # 证书有效期天数（默认：90）
-      CERT_VALIDITY_DAYS: 90
+
 
       # ========== Token配置 ==========
       # 注册令牌TTL秒数（默认：300）
@@ -91,9 +85,7 @@ services:
     ports:
       # 服务端API端口
       - "3000:3000"
-    volumes:
-      # CA证书文件挂载
-      - ./certs:/app/certs
+
     depends_on:
       - mysql
       - ztm-agent
@@ -101,12 +93,12 @@ services:
       - pixlink-network
     command: npm run dev
 
-  # PixLink客户端
-  pixlink-client:
+  # PixLink客户端1
+  pixlink-client-1:
     build:
       context: ./pixlink-client
       dockerfile: Dockerfile
-    container_name: pixlink-client
+    container_name: pixlink-client-1
     restart: unless-stopped
     environment:
       # ========== Vite开发服务器配置 ==========
@@ -116,20 +108,53 @@ services:
       VITE_DEV_HOST: 0.0.0.0
 
       # ========== ZTM Agent配置 ==========
-      # 本地ZTM agent地址（用于获取identity）
-      VITE_ZTM_LOCAL_AGENT_URL: http://localhost:7778/
+      # 本地ZTM agent地址（用于获取identity和创建tunnel）
+      VITE_ZTM_LOCAL_AGENT_URL: http://ztm-client1-agent:7777/
       # ZTM mesh名称
-      VITE_ZTM_MESH_NAME: ztm-hub:8888
+      VITE_ZTM_MESH_NAME: mesh
 
       # ========== 服务器API配置 ==========
       # 后端API地址
-      VITE_API_BASE_URL: http://localhost:3000
+      VITE_API_BASE_URL: http://pixlink-server:3000
     ports:
       # 客户端开发服务器端口
       - "5173:5173"
     depends_on:
       - pixlink-server
       - ztm-client1-agent
+    networks:
+      - pixlink-network
+    command: npm run dev
+
+  # PixLink客户端2
+  pixlink-client-2:
+    build:
+      context: ./pixlink-client
+      dockerfile: Dockerfile
+    container_name: pixlink-client-2
+    restart: unless-stopped
+    environment:
+      # ========== Vite开发服务器配置 ==========
+      # 开发服务器端口
+      VITE_DEV_PORT: 5174
+      # 开发服务器主机
+      VITE_DEV_HOST: 0.0.0.0
+
+      # ========== ZTM Agent配置 ==========
+      # 本地ZTM agent地址（用于获取identity和创建tunnel）
+      VITE_ZTM_LOCAL_AGENT_URL: http://ztm-client2-agent:7777/
+      # ZTM mesh名称
+      VITE_ZTM_MESH_NAME: mesh
+
+      # ========== 服务器API配置 ==========
+      # 后端API地址
+      VITE_API_BASE_URL: http://pixlink-server:3000
+    ports:
+      # 客户端开发服务器端口
+      - "5174:5174"
+    depends_on:
+      - pixlink-server
+      - ztm-client2-agent
     networks:
       - pixlink-network
     command: npm run dev

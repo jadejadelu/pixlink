@@ -33,7 +33,7 @@ class ZTMService {
         throw new Error(`Failed to create ZTM permit: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       logger.info(`ZTM permit created successfully for user: ${username}`);
 
       return {

@@ -3,7 +3,6 @@
 import apiService from './apiService';
 import type {
   Room,
-  RoomVisibility,
   Membership,
   MembershipRole,
   MembershipState,
@@ -15,12 +14,13 @@ import type {
   Message,
   MessageType,
 } from '../types';
+import { RoomVisibility } from '../types';
 
 class RoomService {
   // Create a new room
-  async createRoom(name: string, visibility: RoomVisibility = RoomVisibility.PRIVATE): Promise<Room> {
+  async createRoom(name: string, visibility: RoomVisibility = RoomVisibility.PRIVATE, inviteCode?: string): Promise<Room> {
     try {
-      const response = await apiService.createRoom(name, visibility);
+      const response = await apiService.createRoom(name, visibility, inviteCode);
       return response;
     } catch (error) {
       console.error('Create room error:', error);
@@ -50,14 +50,27 @@ class RoomService {
     }
   }
 
+  // Update room
+  async updateRoom(id: string, data: { name?: string; visibility?: string; inviteCode?: string }): Promise<Room | null> {
+    try {
+      const response = await apiService.updateRoom(id, data);
+      return response;
+    } catch (error) {
+      console.error(`Update room error (${id}):`, error);
+      return null;
+    }
+  }
+
   // Join room
-  async joinRoom(id: string, inviteCode?: string): Promise<Membership | null> {
+  async joinRoom(id: string, inviteCode?: string): Promise<Membership> {
+    console.log(`roomService.joinRoom called with id: ${id}, inviteCode: ${inviteCode}`);
     try {
       const response = await apiService.joinRoom(id, inviteCode);
+      console.log(`apiService.joinRoom returned:`, response);
       return response;
     } catch (error) {
       console.error(`Join room error (${id}):`, error);
-      return null;
+      throw error;
     }
   }
 
@@ -79,6 +92,17 @@ class RoomService {
       return true;
     } catch (error) {
       console.error(`Delete room error (${id}):`, error);
+      return false;
+    }
+  }
+
+  // Remove member
+  async removeMember(roomId: string, userId: string): Promise<boolean> {
+    try {
+      await apiService.removeMember(roomId, userId);
+      return true;
+    } catch (error) {
+      console.error(`Remove member error (room: ${roomId}, user: ${userId}):`, error);
       return false;
     }
   }
@@ -133,7 +157,9 @@ class RoomService {
     title: string,
     proto: TunnelType,
     port: number,
-    templateKey: string = 'custom'
+    templateKey: string = 'custom',
+    hostHint: string = '127.0.0.1',
+    tunnelName?: string
   ): Promise<GameShare | null> {
     try {
       const response = await apiService.createGameShare(roomId, {
@@ -141,10 +167,23 @@ class RoomService {
         proto,
         port,
         templateKey,
+        hostHint,
+        tunnelName,
       });
       return response;
     } catch (error) {
       console.error(`Create game share error (room: ${roomId}):`, error);
+      return null;
+    }
+  }
+
+  // Update game share
+  async updateGameShare(gameShareId: string, tunnelName: string): Promise<GameShare | null> {
+    try {
+      const response = await apiService.updateGameShare(gameShareId, tunnelName);
+      return response;
+    } catch (error) {
+      console.error(`Update game share error (gameShare: ${gameShareId}):`, error);
       return null;
     }
   }
@@ -160,6 +199,17 @@ class RoomService {
     }
   }
 
+  // Get game share by ID
+  async getGameShareById(gameShareId: string): Promise<GameShare | null> {
+    try {
+      const response = await apiService.getGameShareById(gameShareId);
+      return response;
+    } catch (error) {
+      console.error(`Get game share by ID error (${gameShareId}):`, error);
+      return null;
+    }
+  }
+
   // Get game templates
   async getGameTemplates(): Promise<any[]> {
     try {
@@ -168,6 +218,37 @@ class RoomService {
     } catch (error) {
       console.error('Get game templates error:', error);
       return [];
+    }
+  }
+
+  // Delete game share
+  async deleteGameShare(gameShareId: string): Promise<boolean> {
+    try {
+      await apiService.deleteGameShare(gameShareId);
+      return true;
+    } catch (error) {
+      console.error(`Delete game share error (${gameShareId}):`, error);
+      return false;
+    }
+  }
+
+  // Pause game share
+  async pauseGameShare(gameShareId: string): Promise<void> {
+    try {
+      await apiService.pauseGameShare(gameShareId);
+    } catch (error) {
+      console.error(`Pause game share error (${gameShareId}):`, error);
+      throw error;
+    }
+  }
+
+  // Resume game share
+  async resumeGameShare(gameShareId: string): Promise<void> {
+    try {
+      await apiService.resumeGameShare(gameShareId);
+    } catch (error) {
+      console.error(`Resume game share error (${gameShareId}):`, error);
+      throw error;
     }
   }
 
@@ -186,7 +267,7 @@ class RoomService {
   async getRoomMembers(roomId: string): Promise<Membership[]> {
     try {
       const room = await this.getRoom(roomId);
-      return room?.members || [];
+      return room?.memberships || [];
     } catch (error) {
       console.error(`Get room members error (room: ${roomId}):`, error);
       return [];
