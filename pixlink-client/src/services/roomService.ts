@@ -5,14 +5,10 @@ import type {
   Room,
   Membership,
   MembershipRole,
-  MembershipState,
   Tunnel,
   TunnelType,
-  TunnelMode,
-  TunnelState,
   GameShare,
   Message,
-  MessageType,
 } from '../types';
 import { RoomVisibility } from '../types';
 
@@ -309,7 +305,7 @@ class RoomService {
   }
 
   // Update room name
-  async updateRoomName(roomId: string, name: string): Promise<boolean> {
+  async updateRoomName(roomId: string): Promise<boolean> {
     try {
       // In a real implementation, this would call the API
       // For now, we'll just return true
@@ -321,7 +317,7 @@ class RoomService {
   }
 
   // Update room visibility
-  async updateRoomVisibility(roomId: string, visibility: RoomVisibility): Promise<boolean> {
+  async updateRoomVisibility(roomId: string): Promise<boolean> {
     try {
       // In a real implementation, this would call the API
       // For now, we'll just return true

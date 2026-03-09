@@ -1,7 +1,6 @@
 // src/services/ztmService.ts
 
-import type { ZtmPermit, ZtmAgentStatus, ZtmAgentConfig } from '../types';
-import * as nodeForge from 'node-forge';
+import type { ZtmAgentStatus, ZtmAgentConfig } from '../types';
 
 const logger = {
   info: (msg: string, ...args: any[]) => console.log(`[ZtmService] ${msg}`, ...args),
@@ -32,7 +31,7 @@ class ZtmService {
       this.localAgentUrl = '/api/ztm-local-agent/';
     } else {
       // 生产环境使用环境变量
-      this.localAgentUrl = localAgentUrl || import.meta.env.VITE_ZTM_LOCAL_AGENT_URL || 'http://localhost:7778/';
+      this.localAgentUrl = localAgentUrl || import.meta.env.VITE_ZTM_LOCAL_AGENT_URL || 'http://127.0.0.1:7777/';
     }
     this.meshName = meshName || import.meta.env.VITE_ZTM_MESH_NAME || 'mesh';
   }
@@ -193,7 +192,7 @@ class ZtmService {
   }
 
   // Decrypt identity file
-  decryptIdentityFile(encryptedIdentity: string, encryptionNonce: string): string {
+  decryptIdentityFile(encryptedIdentity: string): string {
     // In a real implementation, this would decrypt the identity file
     // For now, we'll simulate it
     return encryptedIdentity.replace('encrypted_', '');

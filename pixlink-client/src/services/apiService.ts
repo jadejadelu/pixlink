@@ -16,7 +16,7 @@ import type {
   ApiResponse,
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://121.41.190.226:8113/api';
 
 class ApiService {
   private baseUrl: string;

@@ -6,7 +6,6 @@ import type {
   User,
   RegisterRequest,
   LoginRequest,
-  LoginResponse,
   AuthResponse,
   UploadIdentityRequest,
   UploadIdentityResponse,
@@ -39,15 +38,15 @@ class UserService {
     try {
       const response = await apiService.login(data);
       // Set the auth token - handle both AuthResponse and LoginResponse structures
-      const token = response.token || (response.session?.token);
+      const token = response.token;
       if (token) {
         apiService.setToken(token);
         // Update store token to ensure authentication state consistency
         const { store } = await import('../store');
         store.setToken(token);
         // Update user info if available
-        if (response.user || response.session?.user) {
-          store.setUser(response.user || response.session?.user);
+        if (response.user) {
+          store.setUser(response.user);
         }
       }
       return response;
@@ -181,14 +180,8 @@ class UserService {
   }
 
   // Generate ZTM identity and upload
-  async generateAndUploadIdentity(userId: string, email: string): Promise<UploadIdentityResponse> {
+  async generateAndUploadIdentity(userId: string): Promise<UploadIdentityResponse> {
     try {
-      // Get device ID from local storage or generate a new one
-      const deviceId = this.getOrCreateDeviceId();
-      
-      // Use device ID directly as ZTM username (device ID already has 'device_' prefix)
-      const ztmUsername = deviceId;
-      
       // Get identity from local ZTM agent
       const identity = await ztmService.getIdentityFromLocalAgent();
       
@@ -261,7 +254,7 @@ class UserService {
       });
       
       // Generate and upload identity
-      const uploadResponse = await this.generateAndUploadIdentity(registerResponse.user.id, data.email);
+      const uploadResponse = await this.generateAndUploadIdentity(registerResponse.user.id);
       
       // Store certificate ID for later use
       this.storeCertificateId(uploadResponse.certificateId);
@@ -289,7 +282,7 @@ class UserService {
       
       try {
         // Try to upload identity to check device status
-        const uploadResponse = await this.generateAndUploadIdentity(loginResponse.user.id, data.email);
+        const uploadResponse = await this.generateAndUploadIdentity(loginResponse.user.id);
         
         // If device is already joined, return early
         if (uploadResponse.isJoinedMesh) {
@@ -323,7 +316,7 @@ class UserService {
       const deviceId = this.getDeviceId();
       
       // Try to upload identity to check device status
-      const uploadResponse = await this.generateAndUploadIdentity(userId, '');
+      const uploadResponse = await this.generateAndUploadIdentity(userId);
       
       return {
         isJoinedMesh: uploadResponse.isJoinedMesh || false,

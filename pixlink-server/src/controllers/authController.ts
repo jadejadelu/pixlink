@@ -34,7 +34,7 @@ export class AuthController {
   async login(req: AuthRequest, res: Response): Promise<void> {
     try {
       const data: LoginRequest = req.body;
-      
+
       const result = await userService.login(data);
 
       if (!result.session) {
@@ -45,11 +45,53 @@ export class AuthController {
         return;
       }
 
+      // Determine nextAction based on device certificate status
+      let nextAction = "upload_identity";
+      let uploadUrl = "/api/auth/upload-identity";
+
+      if (data.deviceId) {
+        // Check if device has a valid certificate and is joined to mesh
+        const certificate = await prisma.certificate.findFirst({
+          where: {
+            userId: result.user.id,
+            deviceId: data.deviceId,
+            status: 'ACTIVE',
+            notAfter: {
+              gt: new Date() // Certificate not expired
+            }
+          },
+          orderBy: {
+            createdAt: 'desc' // Get the most recent certificate
+          }
+        });
+
+        if (certificate) {
+          if (certificate.isJoinedMesh) {
+            // Device has valid certificate and is already joined to mesh
+            nextAction = "dashboard";
+            uploadUrl = undefined as any; // No upload needed
+            logger.info(`User ${result.user.id} device ${data.deviceId} already joined mesh, skipping identity upload`);
+          } else if (certificate.permitSent) {
+            // Certificate exists and permit was sent, but not yet imported
+            nextAction = "import_permit";
+            uploadUrl = "/api/auth/import-permit";
+            logger.info(`User ${result.user.id} device ${data.deviceId} has permit sent, needs to import`);
+          } else {
+            // Certificate exists but permit not sent yet
+            nextAction = "send_permit";
+            uploadUrl = "/api/auth/send-permit";
+            logger.info(`User ${result.user.id} device ${data.deviceId} has certificate, needs to send permit`);
+          }
+        } else {
+          logger.info(`User ${result.user.id} device ${data.deviceId} has no valid certificate, needs identity upload`);
+        }
+      }
+
       const loginResponse: LoginResponse = {
         user: result.user,
         token: result.session.token,
-        nextAction: "upload_identity",
-        uploadUrl: "/api/auth/upload-identity"
+        nextAction: nextAction as any,
+        uploadUrl: uploadUrl
       };
 
       const response: ApiResponse<LoginResponse> = {
@@ -60,7 +102,7 @@ export class AuthController {
       res.status(200).json(response);
     } catch (error: any) {
       logger.error('Login error:', error);
-      
+
       if (error.message === 'Account is pending activation. Please check your email for activation link.') {
         res.status(403).json({
           success: false,
@@ -70,7 +112,7 @@ export class AuthController {
         });
         return;
       }
-      
+
       const statusCode = error.message === 'Invalid password' ? 401 : 400;
       res.status(statusCode).json({
         success: false,
